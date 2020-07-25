@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import javax.swing.ButtonGroup;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
@@ -75,6 +76,7 @@ public class frame extends javax.swing.JFrame {
                             cellCountx = sizeSlider.getValue()*20;
                             cellCounty = sizeSlider.getValue()*10;
                        }
+                       sizeLabelD.setText( ""+cellCounty+"X"+cellCountx );
                        canvas.initMatrix();
                        canvas.resetGrid();
                 }
@@ -86,12 +88,19 @@ public class frame extends javax.swing.JFrame {
         speedSlider.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
-                    delayTime = 200 - 2*speedSlider.getValue();
+                    int base = 100 + (4-sizeSlider.getValue())*(100);
+                    delayTime = base - 2*speedSlider.getValue();
                 }
         });
         densitySlider.setMinimum( 0 );
         densitySlider.setMaximum( 100 );
-        
+        densitySlider.setValue(30);
+        densitySlider.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    densityLabelD.setText(""+densitySlider.getValue()+"%" );
+                }
+        });
     }
     private void initRadioButtons(){
         ButtonGroup bg1 = new ButtonGroup();
@@ -103,6 +112,7 @@ public class frame extends javax.swing.JFrame {
         endRB.setOpaque(false);
         wallRB.setOpaque(false);
         eraseRB.setOpaque(false);
+        startRB.setSelected(true);
     }
     private void initMaze(){
         mazeComboBox.setSelectedItem("Recursive Division");
@@ -199,19 +209,11 @@ public class frame extends javax.swing.JFrame {
             }
             resetGrid();
         }
+        public void resetAll(){
+            initMatrix();
+            resetGrid();
+        }
         public void resetGrid(){
-//            Thread t = new Thread( new Runnable(){
-//                @Override
-//                public void run() {
-//                    repaint();
-//                }
-//            });
-//            t.start();
-//            try {
-//                t.join();
-//            } catch (InterruptedException ex) {
-//                Logger.getLogger(frame.class.getName()).log(Level.SEVERE, null, ex);
-//            }
             repaint();
         }
         Grid(){
@@ -220,8 +222,8 @@ public class frame extends javax.swing.JFrame {
             addMouseMotionListener(this);
             WidthGrid = 960;
             HeightGrid = 480;
-            cellCountx = 20;
-            cellCounty = 10;
+            cellCountx = 40;
+            cellCounty = 20;
             initMatrix();
         }
         
@@ -333,7 +335,7 @@ public class frame extends javax.swing.JFrame {
             try{
             int x = e.getX()/cellSizex;
             int y = e.getY()/cellSizey;
-            if( ( wallRB.isSelected() || eraseRB.isSelected()) && x >= 0 && y >= 0 && x < cellCountx && y < cellCounty ){
+            if( x >= 0 && y >= 0 && x < cellCountx && y < cellCounty ){
             
                 if( x == startCell.x && y == startCell.y ){
                     matrix[startCell.x][startCell.y].setType(3);
@@ -343,7 +345,20 @@ public class frame extends javax.swing.JFrame {
                     matrix[endCell.x][endCell.y].setType(3);
                     endCell.x = endCell.y = -1;
                 } 
-                if( wallRB.isSelected() ){
+                if( startRB.isSelected() ){
+                    if( startCell.x >= 0 && startCell.x < cellCountx && startCell.y >= 0 && startCell.y < cellCounty )
+                        matrix[startCell.x][startCell.y].setType(3);
+                    
+                    matrix[x][y].setType(0);
+                    startCell.x = x;
+                    startCell.y = y;
+                }else if( endRB.isSelected() ){
+                     if( endCell.x >= 0 && endCell.x < cellCountx && endCell.y >= 0 && endCell.y < cellCounty )
+                        matrix[endCell.x][endCell.y].setType(3);
+                    matrix[x][y].setType(1);
+                    endCell.x = x;
+                    endCell.y = y;
+                }else if( wallRB.isSelected() ){
                     matrix[x][y].setType(2);
                 }else if( eraseRB.isSelected() ){
                     matrix[x][y].setType(3);
@@ -392,10 +407,7 @@ public class frame extends javax.swing.JFrame {
                     q.add( canvas.matrix[i][cellCounty-1]);
                 for( int i = cellCounty-2 ; i > 0 ; i-- )
                     q.add( canvas.matrix[0][i] );
-                if( val.equals("KRUSKAL'S"))
-                    kruskals();
-                else
-                    recursiveMaze(1, 1, cellCountx-3, cellCounty-3);
+                recursiveMaze(1, 1, cellCountx-3, cellCounty-3);
             }
             int dt, s;
             s = sizeSlider.getValue();
@@ -542,7 +554,7 @@ public class frame extends javax.swing.JFrame {
                 y2 = obj2.y;
             }
         }
-        public void kruskals(){
+        /*public void kruskals(){
             int[][] a = new int[cellCountx][cellCounty];
             for( int i = 0 ; i < cellCountx ; i++ ){
                 a[i][0] = 1;
@@ -597,7 +609,7 @@ public class frame extends javax.swing.JFrame {
 //                }
 //                System.out.println();
 //            }
-        }
+        }*/
     }
     /*--- CLASS MAZE ENDS HERE ------------------------------------------------------------------------------------*/
     
@@ -625,7 +637,14 @@ public class frame extends javax.swing.JFrame {
             path2 = new LinkedList();
         }
         public void startSearch(){
-            
+            if( startCell.x == -1 || startCell.y == -1 ){
+                JOptionPane.showMessageDialog( frame.this, "STARTING CELL NOT SPECIFIED !!" );
+                return;
+            }
+            if( endCell.x == -1 || endCell.y == -1 ){
+                JOptionPane.showMessageDialog( frame.this, "ENDING CELL NOT SPECIFIED !!" );
+                return;
+            }
             canvas.clearGrid();
             canvas.resetGrid();
             path.clear();
@@ -699,8 +718,7 @@ public class frame extends javax.swing.JFrame {
                     path.remove();
                 
             }
-            int s = sizeSlider.getValue();
-           
+           int s = sizeSlider.getValue();
            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>(){//show Explored Cells
                 @Override
                 protected Void doInBackground() throws Exception {
@@ -734,7 +752,7 @@ public class frame extends javax.swing.JFrame {
                              }
                              publish();
                        }
-                       Thread.sleep(100);
+                       Thread.sleep(delayTime);
                        
                     }
                     return null;
@@ -765,7 +783,7 @@ public class frame extends javax.swing.JFrame {
                         b = canvas.matrix[ok1][ok2].pary;
                         ok1 = a;
                         ok2 = b;
-                        Thread.sleep(100);
+                        Thread.sleep(delayTime);
                         publish();
                     }
                     return null;
@@ -862,7 +880,7 @@ public class frame extends javax.swing.JFrame {
                        path.element().setType(5);
                        path.remove();
                        publish();
-                       Thread.sleep(10);
+                       Thread.sleep(delayTime/5);
                     }
                     return null;
                 }
@@ -895,7 +913,7 @@ public class frame extends javax.swing.JFrame {
                             b = canvas.matrix[ok1][ok2].pary;
                             ok1 = a;
                             ok2 = b;
-                            Thread.sleep(100);
+                            Thread.sleep(delayTime/6);
                             publish();
                         }
                         return null;
@@ -1032,17 +1050,22 @@ public class frame extends javax.swing.JFrame {
 
         GridPanel = new javax.swing.JPanel();
         ToolBoxPanel = new javax.swing.JPanel();
-        jButton2 = new javax.swing.JButton();
-        jButton3 = new javax.swing.JButton();
+        genMazeBtn = new javax.swing.JButton();
+        startBtn = new javax.swing.JButton();
         searchTypeComboBox = new javax.swing.JComboBox<>();
         mazeComboBox = new javax.swing.JComboBox<>();
+        clearGridBtn = new javax.swing.JButton();
+        resetGridBtn = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
+        sizeLabelD = new javax.swing.JLabel();
         sizeLabel = new javax.swing.JLabel();
         densityLabel = new javax.swing.JLabel();
         speedLabel = new javax.swing.JLabel();
         speedSlider = new javax.swing.JSlider();
         sizeSlider = new javax.swing.JSlider();
         densitySlider = new javax.swing.JSlider();
+        densityLabelD = new javax.swing.JLabel();
+        speedLabelD = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         startRB = new javax.swing.JRadioButton();
         endRB = new javax.swing.JRadioButton();
@@ -1077,39 +1100,71 @@ public class frame extends javax.swing.JFrame {
         ToolBoxPanel.setMaximumSize(new java.awt.Dimension(1027, 98));
         ToolBoxPanel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pathfindingproject/startButton.jpg"))); // NOI18N
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        genMazeBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pathfindingproject/genMazei.jpg"))); // NOI18N
+        genMazeBtn.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(255, 255, 255), 1, true));
+        genMazeBtn.setOpaque(false);
+        genMazeBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                genMazeBtnActionPerformed(evt);
             }
         });
-        ToolBoxPanel.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 40, 110, 30));
+        ToolBoxPanel.add(genMazeBtn, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 40, 130, 30));
 
-        jButton3.setText("GENERATE MAZE");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        startBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pathfindingproject/startButtoni.jpg"))); // NOI18N
+        startBtn.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(255, 255, 255), 1, true));
+        startBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                startBtnActionPerformed(evt);
             }
         });
-        ToolBoxPanel.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 40, 140, 30));
+        ToolBoxPanel.add(startBtn, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 100, 130, 30));
 
         searchTypeComboBox.setBackground(new java.awt.Color(204, 204, 204));
         searchTypeComboBox.setFont(new java.awt.Font("Times New Roman", 1, 14)); // NOI18N
         searchTypeComboBox.setForeground(new java.awt.Color(102, 102, 0));
         searchTypeComboBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "BFS", "DFS", "A STAR(A*)", "DIJKSTRA", "SWARM ALGORITHM", "BIDIRECTIONAL SWARM" }));
+        searchTypeComboBox.setToolTipText("");
         searchTypeComboBox.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 2, true));
-        ToolBoxPanel.add(searchTypeComboBox, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 100, 160, 30));
+        searchTypeComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                searchTypeComboBoxActionPerformed(evt);
+            }
+        });
+        ToolBoxPanel.add(searchTypeComboBox, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 100, 180, 30));
 
         mazeComboBox.setBackground(new java.awt.Color(204, 204, 204));
         mazeComboBox.setFont(new java.awt.Font("Times New Roman", 1, 14)); // NOI18N
         mazeComboBox.setForeground(new java.awt.Color(102, 102, 0));
-        mazeComboBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Recursive Division", "Horizontal skew", "Verticall skew", "BFS Random Maze", "Random Maze", "KRUSKAL'S" }));
+        mazeComboBox.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Recursive Division", "Horizontal skew", "Verticall skew", "BFS Random Maze", "Random Maze" }));
         mazeComboBox.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 2, true));
-        ToolBoxPanel.add(mazeComboBox, new org.netbeans.lib.awtextra.AbsoluteConstraints(300, 100, 180, 30));
+        ToolBoxPanel.add(mazeComboBox, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 40, 180, 30));
+
+        clearGridBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pathfindingproject/clearGridi.jpg"))); // NOI18N
+        clearGridBtn.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(255, 255, 255), 1, true));
+        clearGridBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                clearGridBtnActionPerformed(evt);
+            }
+        });
+        ToolBoxPanel.add(clearGridBtn, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 40, 130, 30));
+
+        resetGridBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/pathfindingproject/resetGridi.jpg"))); // NOI18N
+        resetGridBtn.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(255, 255, 255), 1, true));
+        resetGridBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resetGridBtnActionPerformed(evt);
+            }
+        });
+        ToolBoxPanel.add(resetGridBtn, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 100, 130, 30));
 
         jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 11), new java.awt.Color(204, 204, 255))); // NOI18N
         jPanel2.setOpaque(false);
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        sizeLabelD.setFont(new java.awt.Font("Trebuchet MS", 1, 14)); // NOI18N
+        sizeLabelD.setForeground(new java.awt.Color(255, 255, 255));
+        sizeLabelD.setText("20X40");
+        jPanel2.add(sizeLabelD, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 60, 40, 30));
 
         sizeLabel.setBackground(new java.awt.Color(204, 204, 255));
         sizeLabel.setFont(new java.awt.Font("Times New Roman", 1, 14)); // NOI18N
@@ -1131,15 +1186,25 @@ public class frame extends javax.swing.JFrame {
 
         speedSlider.setSnapToTicks(true);
         speedSlider.setOpaque(false);
-        jPanel2.add(speedSlider, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 20, 160, -1));
+        jPanel2.add(speedSlider, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 20, 160, -1));
 
         sizeSlider.setSnapToTicks(true);
         sizeSlider.setOpaque(false);
-        jPanel2.add(sizeSlider, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 60, 160, -1));
+        jPanel2.add(sizeSlider, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 60, 160, -1));
 
         densitySlider.setSnapToTicks(true);
         densitySlider.setOpaque(false);
-        jPanel2.add(densitySlider, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 100, 160, -1));
+        jPanel2.add(densitySlider, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 100, 160, -1));
+
+        densityLabelD.setFont(new java.awt.Font("Trebuchet MS", 1, 14)); // NOI18N
+        densityLabelD.setForeground(new java.awt.Color(255, 255, 255));
+        densityLabelD.setText("30%");
+        jPanel2.add(densityLabelD, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 100, 40, 30));
+
+        speedLabelD.setFont(new java.awt.Font("Trebuchet MS", 1, 14)); // NOI18N
+        speedLabelD.setForeground(new java.awt.Color(255, 255, 255));
+        speedLabelD.setText("50%");
+        jPanel2.add(speedLabelD, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 20, 30, 30));
 
         ToolBoxPanel.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(710, 10, 290, 140));
 
@@ -1203,14 +1268,25 @@ public class frame extends javax.swing.JFrame {
     private void startRBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startRBActionPerformed
     }//GEN-LAST:event_startRBActionPerformed
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    private void genMazeBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_genMazeBtnActionPerformed
         maze.generateMaze();
-    }//GEN-LAST:event_jButton3ActionPerformed
+    }//GEN-LAST:event_genMazeBtnActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void startBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startBtnActionPerformed
         algo.startSearch();
+    }//GEN-LAST:event_startBtnActionPerformed
 
-    }//GEN-LAST:event_jButton2ActionPerformed
+    private void searchTypeComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchTypeComboBoxActionPerformed
+        
+    }//GEN-LAST:event_searchTypeComboBoxActionPerformed
+
+    private void clearGridBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearGridBtnActionPerformed
+        canvas.clearGrid();
+    }//GEN-LAST:event_clearGridBtnActionPerformed
+
+    private void resetGridBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetGridBtnActionPerformed
+        canvas.resetAll();
+    }//GEN-LAST:event_resetGridBtnActionPerformed
     
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -1219,21 +1295,26 @@ public class frame extends javax.swing.JFrame {
     private javax.swing.JPanel GridPanel;
     private javax.swing.JLabel ToolBoxLabel;
     private javax.swing.JPanel ToolBoxPanel;
+    private javax.swing.JButton clearGridBtn;
     private javax.swing.JLabel densityLabel;
+    private javax.swing.JLabel densityLabelD;
     private javax.swing.JSlider densitySlider;
     private javax.swing.JRadioButton endRB;
     private javax.swing.JRadioButton eraseRB;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
+    private javax.swing.JButton genMazeBtn;
     private javax.swing.JInternalFrame jInternalFrame1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JComboBox<String> mazeComboBox;
+    private javax.swing.JButton resetGridBtn;
     private javax.swing.JComboBox<String> searchTypeComboBox;
     private javax.swing.JLabel sizeLabel;
+    private javax.swing.JLabel sizeLabelD;
     private javax.swing.JSlider sizeSlider;
     private javax.swing.JLabel speedLabel;
+    private javax.swing.JLabel speedLabelD;
     private javax.swing.JSlider speedSlider;
+    private javax.swing.JButton startBtn;
     private javax.swing.JRadioButton startRB;
     private javax.swing.JRadioButton wallRB;
     // End of variables declaration//GEN-END:variables
