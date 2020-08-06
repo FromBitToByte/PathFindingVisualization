@@ -1,7 +1,7 @@
 # PathFindingVisualization
 Project to visualize how PathFinding Algorithm works and to implement various Maze Generation Algorithm.
 
-**Small Demo To Project......**
+**Small Demo of Live Project is shown below........ To have look at more features have a look at GIF Directory**
 
 **1.) Bfs and A-Star live**
 ![](GIF/bfsAndAstar.gif)
