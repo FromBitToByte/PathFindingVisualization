@@ -3,8 +3,8 @@ Project to visualize how PathFinding Algorithm works and to implement various Ma
 
 **Small Demo To Project......**
 
-**1.) Welcome/Loading Page**
-![](GIF/loading.gif)
+**1.) BFS AND ASTAR LIVE**
+![](GIF/bfsAndAstar.gif)
 
 
 
